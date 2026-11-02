@@ -1,0 +1,55 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Skips cleanly (green) until deploy credentials are configured.
+      # To arm: add repo secrets CLOUDFLARE_API_TOKEN (Zone:Edit not required;
+      # Workers Scripts:Edit + Account Settings:Read) and CLOUDFLARE_ACCOUNT_ID.
+      - name: Gate on credentials
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN not set — deploy skipped. Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repo secrets to arm."
+            exit 0
+          fi
+          echo "armed=true" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        if: env.armed == 'true'
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      - name: Install deploy tooling
+        if: env.armed == 'true'
+        run: npm install -D wrangler @opennextjs/cloudflare --no-audit --no-fund --legacy-peer-deps
+
+      - name: Patch SDK p2p requires (published dist is ESM-broken; see estate report)
+        if: env.armed == 'true'
+        run: node scripts/patch-sdk-p2p.mjs
+
+      - name: Build (OpenNext)
+        if: env.armed == 'true'
+        env:
+          # Build-time placeholders: Stripe constructors run during page-data
+          # collection. Real keys are injected at runtime via wrangler secrets.
+          STRIPE_SECRET_KEY: sk_test_placeholder_build_only
+          STRIPE_WEBHOOK_SECRET: whsec_placeholder
+        run: npx opennextjs-cloudflare build
+
+      - name: Deploy to Cloudflare Workers
+        if: env.armed == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
