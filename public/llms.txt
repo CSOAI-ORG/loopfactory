@@ -1,0 +1,13 @@
+# LoopFactory AI
+
+> AI-powered loop optimization and creative workspace
+
+LoopFactory AI is AI-powered loop optimization and creative workspace. It is operated as part of the CSOAI estate of applied-AI services; methods and governance live at [Council of AI](https://councilof.ai).
+
+## Pages
+- [Home](https://loopfactory.ai): AI-powered loop optimization and creative workspace
+- [Pricing](https://loopfactory.ai/pricing): Plans and costs
+- [FAQ](https://loopfactory.ai/faq): Common questions about LoopFactory AI
+
+## Contact
+Email via the site's request-a-quote CTA, or through Council of AI at https://councilof.ai.
